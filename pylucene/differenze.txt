@@ -1,0 +1,9 @@
+VSM: I punteggi sono più alti in generale, e c'è una certa uniformità tra i risultati per i titoli correlati.
+I punteggi per documenti simili, come "Family Plot" e "Family Business", sono uguali (5.1876), il che indica che il modello non sta differenziando molto tra questi documenti, trattandoli come molto simili nel spazio dei vettori.
+Questo potrebbe essere un comportamento tipico del VSM, che si concentra maggiormente sulla similarità del contenuto in base alla presenza dei termini di ricerca e alla loro distribuzione nel documento.
+
+BM25: I punteggi sono più bassi rispetto al VSM, ma l'importante differenza è che variano di più.
+BM25 tiene conto di vari fattori come la frequenza dei termini, la lunghezza del documento e la frequenza inversa del documento (IDF). Anche se due risultati sono simily, vediamo un punteggio minore rispetto a VSM: Questo accade perché BM25 penalizza i termini che compaiono troppo frequentemente (ad esempio, "Family" in molti titoli) e bilancia con la lunghezza del documento e altre considerazioni.
+
+INTERPRETAZIONI: VSM tende a dare un punteggio più alto a tutti i documenti che contengono le parole della query in modo simile, senza penalizzare o bilanciare la frequenza o la lunghezza dei documenti.
+BM25 sembra essere più "sofisticato" nel suo modo di valutare i documenti, offrendo una maggiore variazione nei punteggi e penalizzando i documenti che non sono particolarmente rilevanti o che contengono termini troppo frequenti.
