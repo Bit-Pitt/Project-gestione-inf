@@ -3,10 +3,15 @@ from whoosh.fields import *
 import os, os.path
 import pandas as pd
 
-    #SOLO "TEXT" subirà pre-processing, non salvo nell'II solo la trama
+# Codice per la creazione dell'indice / degli indici.
+
+
+#Codice per il primo indice:  utilizza lo standard analyzer, non salviamo i token della trama
+
+    
 
 schema = Schema(
-    title=TEXT(stored=True), 
+    title=TEXT(stored=True),        #SOLO "TEXT" subirà pre-processing
     year=ID(stored=True),
     genre=KEYWORD(stored=True, commas=True), 
     country=KEYWORD(stored=True),  
@@ -21,12 +26,11 @@ ix = create_in(directory, schema)
 
 writer = ix.writer()          
 
-# whoosh usa l'analyzer inglese di default
 
 # Carica il dataset CSV
 df = pd.read_csv("dataset-constr\\films.csv")
 
-# Aggiungi i documenti all'indice
+# Aggiungi i documenti all'indice specificando i vari campi
 for indice, films in df.iterrows():
     writer.add_document(    title=films["Title"], 
                             year= str(films["Year"]),
@@ -34,9 +38,7 @@ for indice, films in df.iterrows():
                             country=films["Country"],
                             plot=films["Plot"]
                                )
-
-
-# Commit 
+ 
 writer.commit()
 
 
