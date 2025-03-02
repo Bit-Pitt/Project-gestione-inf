@@ -1,0 +1,42 @@
+from whoosh.index import create_in
+from whoosh.fields import *
+import os, os.path
+import pandas as pd
+
+    #SOLO "TEXT" subirà pre-processing, non salvo nell'II solo la trama
+
+schema = Schema(
+    title=TEXT(stored=True), 
+    year=ID(stored=True),
+    genre=KEYWORD(stored=True, commas=True), 
+    country=KEYWORD(stored=True),  
+    plot=TEXT(stored=False),                                                                                   
+)
+
+if not os.path.exists("indexdir"):
+    os.mkdir("indexdir")
+ix = create_in("indexdir", schema)
+
+writer = ix.writer()          
+
+# whoosh usa l'analyzer inglese di default
+
+# Carica il dataset CSV
+df = pd.read_csv("films.csv")
+
+# Aggiungi i documenti all'indice
+for index, row in df.iterrows():
+    writer.add_document(    title=row["Title"], 
+                            year= str(row["Year"]),
+                            genre=row["Genre"],
+                            country=row["Country"],
+                            plot=row["Plot"]
+                               )
+
+
+# Commit 
+writer.commit()
+
+
+print("Indicizzazione completata!")
+
