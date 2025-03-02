@@ -1,8 +1,0 @@
-FASE 1: WEB SCRAPING
---> tool: Beatiful soup
---> circa 10 mila documenti
---> idealmente giriamo su wikipedia (dove hai wikipedia API)
---> scegliere topic
---> Creazione dei doc con almeno due field (TITOLO-CORPO)
-
-==> Una volta creati i doc creare II.
