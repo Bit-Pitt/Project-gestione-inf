@@ -3,7 +3,8 @@ from whoosh.fields import *
 from whoosh.qparser import QueryParser
 import os, os.path
 
-ix = open_dir("indexdir")
+directory = os.path.join("Whoosh", "II_stdAnalyzer")                #Soluzione portabile
+ix = open_dir(directory)
 
 searcher = ix.searcher()
 
