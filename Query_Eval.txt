@@ -32,3 +32,11 @@ Misure di performance
 UIN:1
 Necessità informativa:   L'utente cerca il film in cui il protagonista vive in un reality show   (cerca "the truman show")
 query: "a man who lives in a reality show"
+
+Scaletta attuale: 
+--> capire come usare Gold Standard
+--> vedere di usare tolerant retrieval
+--> creazione di query 
+--> [adesso puoi fare evalutation] con generazione di grafici (per confrontare)
+--> i due script
+--> "ottimizzazioni" [cambiare VSP / II ] (e documentare con grafico) , poi fare il SE su postgres
