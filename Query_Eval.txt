@@ -1,0 +1,34 @@
+Contesto: SE finalizzato alla ricerca di film sulla base princ. della trama ma anche titolo,genere,anno, città
+
+Query:  (UIN --> in linguaggio naturale)
+--> usa i field e combina anche con "AND" / "OR" 
+--> più o meno specifiche   ("film d'azione americano ambietato a new york" è generica esempio)
+--> più o meno lunghe
+--> più o meno "complesse"  (computazionalmente  con più ora e field diversi)
+--> usare wildcard (prefix postfix o più complesse)
+--> spelling errato vedere se corregge bene    [attualmente sembra non faccia tolerant retrieval]
+--> utilizzo di frasi simili (per esempio in truman show abbiamo
+	scritto "a man who is unaware that he is living his entire life on a colossal soundstage"
+	e scriviamo una frase simile senza usare stesse parole e vediamo come si comporta nel 
+	riconoscere la similarità.
+
+
+Misure di performance
+- misure oggettive sulla velocità della query e creazione indice (questo è veloce ma boh vediamo se parlarne)
+- espressività:  Visto che l'utente su cui abbiamo creato i SE sono utenti generici, implementare la keyword based query con anche la 
+		possibilità di usare query booleane e con wildcard la espressività richiesta dall'utente è sicuramente rispettata
+- "user happiness" ==> studiamo "approssimando" tramite fattori oggettivi: 
+              - Prendiamo un SE di riferimento da usare come gold standard.    [VEDERE COME FARE]
+ 	      - potenziali misure:  recall / precision  ==>  ma ci interessa di più il ranking quindi: 
+			- prec ai diversi livelli di recall   (puoi creare grafico slide che confronta i due SE)
+			- Avg precision ==> precisione media delle 10 query  (con magari varianza)
+			- Avg precision per single query ==> vedi la prec media delle query ai livelli di rec
+			- R prec
+			- NDCG ==> la migliore ma bisogna vedere se si riesce ad implementare
+			
+*ricorda script in cui la prof può decidere il modello da usare e provare a mettere delle query
+* script ulteriore per mostrare tutti i risultati ottenuti dalle query che abbiamo usato e grafici ottenuti
+* Dovremmo produrre un file testuale in cui per ogni UIN dobbiamo mettere la necessità informativa e poi la query sottomessa ovvero: 
+UIN:1
+Necessità informativa:   L'utente cerca il film in cui il protagonista vive in un reality show   (cerca "the truman show")
+query: "a man who lives in a reality show"
