@@ -42,8 +42,7 @@ Scaletta attuale:
 --> "ottimizzazioni" [cambiare VSP / II ] (e documentare con grafico) , poi fare il SE su postgres
 
 NITRO_HOWARD pylucene
-chiave API pylucene: AIzaSyBBRiMjlE0q7x8z9pUFSlt_7dAWa1gZaHQ 
-id SE pylucene: c1804e638497b4ba6
+Uso google con api
 ho installato fuzzywuzzy e python-Levenshtein (per ottimizzare il primo), altrimenti precision e recall erano 0 anche se cambiava una virgola tra dati restituiti e dataset
 
 PROBLEMA: mi da sempre 0, penso perché il titolo dataset e risultato google non combaciano perfettamente
