@@ -9,12 +9,21 @@ import pandas as pd
 #Codice per il primo indice:  utilizza lo standard analyzer, non salviamo i token della trama
 
     
-
+'''
 schema = Schema(
     title=TEXT(stored=True),        #SOLO "TEXT" subirà pre-processing
     year=ID(stored=True),
     genre=KEYWORD(stored=True, commas=True), 
     country=KEYWORD(stored=True),  
+    plot=TEXT(stored=False),                                                                                   
+)
+'''
+
+schema = Schema(
+    title=TEXT(stored=True),        
+    year=TEXT(stored=True),
+    genre=TEXT(stored=True), 
+    country=TEXT(stored=True),  
     plot=TEXT(stored=False),                                                                                   
 )
 
@@ -28,7 +37,10 @@ writer = ix.writer()
 
 
 # Carica il dataset CSV
-df = pd.read_csv("dataset-constr\\films.csv")
+file = os.path.join("dataset-constr", "films.csv") 
+df = pd.read_csv(file)
+
+
 
 # Aggiungi i documenti all'indice specificando i vari campi
 for indice, films in df.iterrows():
