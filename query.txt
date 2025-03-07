@@ -1,0 +1,49 @@
+Elenco delle UIN e relativa query immessa:
+
+1)
+Need: Voglio un film d'azione americano ambientato a New York.
+Query: action movie set in New York AND Country:United States AND Genre:action
+
+2)
+Need: Cerco un film horror che parli di una maledizione.
+Query: curse* AND Genre:horror
+[uso di wildcard]
+
+3)
+Need: Voglio un film di fantascienza o fantasy uscito dopo il 2000.
+Query: (Genre:science fiction OR Genre:fantasy) AND Year:[2001 TO *]
+
+4)
+Need: Cerco un film in cui un uomo scopre che la sua vita è un enorme show televisivo (es. The Truman Show).
+Query: "a person unknowngly lives inside a massive tv shw"
+[tolerant retrieval]
+
+5)
+Need: Voglio trovare "The Godfather".
+Query: title:Godfather AND year:1972
+[query specifica]
+
+6)
+Need: Un film in cui un uomo vive la sua vita senza sapere di essere osservato costantemente.
+Query: plot:"a guy who has no idea his life is being watched every moment"
+[uso di parole "simili" a quelle usate nella trama di "the truman show"]
+
+
+7)
+Need: Voglio un thriller americano ambientato a Londra con una storia di vendetta.
+Query: plot:reven* AND genre:thriller AND country:United States AND plot:*London*
+[computazionalmente costosa]
+
+8)
+Need: Un film francese drammatico che parli di una famiglia che affronta una grande tragedia.
+Query: plot:"family dealing with major loss" AND genre:drama AND country:France
+
+9)
+Need: Qualsiasi film di avventura con una grande ricerca o viaggio epico.
+Query: plot:quest OR plot:epic journey AND genre:adventure
+[query vaga]
+
+
+*******************
+Country:United Kin*"    (?) errori con country
+Year NO ==> year si 
