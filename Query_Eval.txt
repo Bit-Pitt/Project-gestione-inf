@@ -38,5 +38,5 @@ Scaletta attuale:
 --> vedere di usare tolerant retrieval
 --> creazione di query 
 --> [adesso puoi fare evalutation] con generazione di grafici (per confrontare)
---> i due script
+--> i due script   (se veloce crea una User interface, così l'utente scrive la sua query e la invia)
 --> "ottimizzazioni" [cambiare VSP / II ] (e documentare con grafico) , poi fare il SE su postgres
