@@ -25,13 +25,13 @@ Query: title:Godfather AND year:1972
 
 6)
 Need: Un film in cui un uomo vive la sua vita senza sapere di essere osservato costantemente.
-Query: plot:a guy who has no idea his life is being watched every moment
+Query: a guy who has no idea his life is being watched every moment
 [uso di parole "simili" a quelle usate nella trama di "the truman show"]
 
 
 7)
 Need: Voglio un thriller americano ambientato a Londra con una storia di vendetta.
-Query: plot:reven* AND genre:thriller AND country:United States AND plot:*London*
+Query: reven* AND genre:thriller AND country:United States AND plot:*London*
 [computazionalmente costosa]
 
 8)
@@ -40,7 +40,7 @@ Query: family dealing with major loss  AND genre:drama
 
 9)
 Need: Qualsiasi film di avventura con una grande ricerca o viaggio epico.
-Query: plot:quest OR plot:epic journey AND genre:adventure
+Query: quest OR plot:epic journey AND genre:adventure
 [query vaga]
 
 10)
