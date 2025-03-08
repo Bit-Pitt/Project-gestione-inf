@@ -1,0 +1,49 @@
+import pandas as pd
+import os
+import re
+
+# Funzione per rimuovere caratteri non validi dai nomi dei file e sostituire gli spazi con underscore
+def sanitize_filename(filename):
+    filename = re.sub(r'[\\/*?:"<>|]', "", filename)
+    return filename.replace(" ", "_")
+
+# Carica il dataset CSV
+file = os.path.join("dataset-constr", "films.csv")
+df = pd.read_csv(file)
+
+# Directory di output per le pagine HTML
+output_dir = 'docs'
+os.makedirs(output_dir, exist_ok=True)
+
+# Creazione delle pagine HTML
+for indice, films in df.iterrows():
+    title = films["Title"]
+    year = films["Year"]
+    genre = films["Genre"]
+    country = films["Country"]
+    plot = films["Plot"]
+    
+    # Sanitize the title for the filename
+    sanitized_title = sanitize_filename(title)
+    
+    # Contenuto HTML
+    html_content = f"""
+    <html>
+    <head>
+        <title>{title}</title>
+    </head>
+    <body>
+        <h1>{title}</title>
+        <p><strong>Year:</strong> {year}</p>
+        <p><strong>Genre:</strong> {genre}</p>
+        <p><strong>Country:</strong> {country}</p>
+        <p><strong>Plot:</strong> {plot}</p>
+    </body>
+    </html>
+    """
+    
+    # Salva la pagina HTML
+    with open(os.path.join(output_dir, f"{sanitized_title}.html"), 'w', encoding='utf-8') as html_file:
+        html_file.write(html_content)
+
+print("Conversione completata!")
