@@ -2,11 +2,12 @@ from whoosh.index import create_in
 from whoosh.fields import *
 import os, os.path
 import pandas as pd
+from elasticsearch import Elasticsearch
 
 # Codice per la creazione dell'indice / degli indici.
 
 
-#Codice per il primo indice:  utilizza lo standard analyzer, non salviamo i token della trama
+#Creazione del primo II di Whoosh, utilizzo dello standard Analyzer
 
     
 '''
@@ -18,7 +19,7 @@ schema = Schema(
     plot=TEXT(stored=False),                                                                                   
 )
 '''
-
+'''
 schema = Schema(
     title=TEXT(stored=True),        
     year=TEXT(stored=True),
@@ -54,5 +55,62 @@ for indice, films in df.iterrows():
 writer.commit()
 
 
-print("Indicizzazione completata!")
+print("Indicizzazione primo II completata!")
 
+'''
+
+
+#Creazione del'II del Gold Standard
+
+
+# Connessione al servizio di  Elasticsearch 
+# NECESSITA CHE IL SERVIZIO SIA ATTIVO (vari modi per scaricarlo, io lo ho scaricato da internet (elastic.co/download))
+# estratta la cartella avvi il servizio ".\elasticsearch.bat"
+es = Elasticsearch("http://localhost:9200")
+
+# Nome dell'indice
+index_name = "II_GoldStandard"
+
+# Definizione dello schema (mappatura dei campi)
+mapping = {
+    "settings": {
+        "analysis": {
+            "analyzer": {
+                "standard_analyzer": {
+                    "type": "standard"
+                }
+            }
+        }
+    },
+    "mappings": {
+        "properties": {
+            "title": {"type": "text", "analyzer": "standard"},  
+            "year": {"type": "text"},
+            "genre": {"type": "text"},  
+            "country": {"type": "text"},
+            "plot": {"type": "text", "analyzer": "standard"}
+        }
+    }
+}
+
+# Creazione dell'indice in Elasticsearch con la struttura assegnata ("mapping")
+if not es.indices.exists(index=index_name):
+    es.indices.create(index=index_name, body=mapping)
+
+# carico il dataset
+file = os.path.join("dataset-constr", "films.csv") 
+df = pd.read_csv(file)
+
+
+# Inserimento dati in Elasticsearch
+for _, film in df.iterrows():
+    doc = {
+        "title": film["Title"],
+        "year": str(film["Year"]),
+        "genre": film["Genre"],
+        "country": film["Country"],
+        "plot": film["Plot"]
+    }
+    es.index(index=index_name, document=doc)
+
+print("Indicizzazione II gold standard completata!")
