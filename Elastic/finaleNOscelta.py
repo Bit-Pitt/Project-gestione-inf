@@ -110,7 +110,7 @@ for hit in top_docs.scoreDocs:
 print("-" * 50)
 
 # Mi connetto ad ElasticSearch per GoldenStandard
-es = Elasticsearch("http://localhost:9200", basic_auth=("elastic", "NaePd5lzxh-rYkg1Aop3"))
+es = Elasticsearch("http://localhost:9200", basic_auth=("elastic", "..."))
 if not es.ping():
     print("❌ Errore di connessione ad Elasticsearch!")
     reader.close()
