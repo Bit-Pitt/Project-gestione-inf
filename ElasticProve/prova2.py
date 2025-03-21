@@ -109,7 +109,7 @@ print("-" * 50)
 
 # 🔍 **Ottieni il golden standard da Elasticsearch**
 es = Elasticsearch(
-    "http://localhost:9200", basic_auth=("elastic", "NaePd5lzxh-rYkg1Aop3")  # Connessione con autenticazione base
+    "http://localhost:9200", basic_auth=("elastic", "...")  # Connessione con autenticazione base
 )
 
 def get_elasticsearch_results(query):

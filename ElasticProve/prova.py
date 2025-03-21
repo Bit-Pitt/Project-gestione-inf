@@ -3,7 +3,7 @@ from fuzzywuzzy import fuzz
 import re
 
 # Connessione a Elasticsearch con autenticazione
-es = Elasticsearch("http://localhost:9200", basic_auth=("elastic", "NaePd5lzxh-rYkg1Aop3"))
+es = Elasticsearch("http://localhost:9200", basic_auth=("elastic", "..."))
 
 
 # Verifica connessione
