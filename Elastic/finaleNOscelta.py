@@ -2,19 +2,18 @@ import lucene
 import os
 import requests
 from fuzzywuzzy import fuzz
-import re
+from elasticsearch import Elasticsearch
 from org.apache.lucene.store import FSDirectory
 from org.apache.lucene.index import DirectoryReader
-from org.apache.lucene.search import IndexSearcher, TopDocs
+from org.apache.lucene.search import IndexSearcher
 from org.apache.lucene.queryparser.classic import QueryParser
 from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.search.similarities import ClassicSimilarity, BM25Similarity
 from java.nio.file import Paths
 
-# 🚀 Avvia la JVM
 lucene.initVM()
 
-# 📂 Percorso dell'indice
+# 📂 Percorso dell'indice PyLucene
 current_dir = os.path.dirname(os.path.abspath(__file__))
 index_path = os.path.join(current_dir, "index")
 
@@ -22,15 +21,14 @@ index_path = os.path.join(current_dir, "index")
 directory = FSDirectory.open(Paths.get(index_path))
 reader = DirectoryReader.open(directory)
 
-# 🔍 Crea i due motori di ricerca
+# 🔍 Crea i due motori di ricerca PyLucene
 searcher_vsm = IndexSearcher(reader)
-searcher_vsm.setSimilarity(ClassicSimilarity())  # 🔥 Forza VSM
-
+searcher_vsm.setSimilarity(ClassicSimilarity())  # VSM
 searcher_bm25 = IndexSearcher(reader)
-searcher_bm25.setSimilarity(BM25Similarity())  # 🔥 Usa BM25
+searcher_bm25.setSimilarity(BM25Similarity())   # BM25
 
 # 📝 Mappatura dei campi
-field_mapping = {
+field_mapping_NOGS = {
     "title": "Title",
     "year": "Year",
     "genre": "Genre",
@@ -38,22 +36,40 @@ field_mapping = {
     "plot": "Plot"
 }
 
-# 🎯 Input utente
-valid_fields = list(field_mapping.keys())
-field = input(f"In che campo vuoi cercare? {valid_fields}: ").strip().lower()
+# Mappatura dei campi per il Golden Standard
+field_mapping_GS = {
+    "title": "title",
+    "year": "year",
+    "genre": "genre",
+    "country": "country",
+    "plot": "plot"
+}
 
-if field not in field_mapping:
-    print("❌ Campo non valido! Usa uno tra:", valid_fields)
+# 🎯 Input utente
+model_choice = input("Quale modello di ricerca vuoi utilizzare? [vsm/bm25]: ").strip().lower()
+if model_choice == "vsm":
+    searcher = searcher_vsm
+elif model_choice == "bm25":
+    searcher = searcher_bm25
+else:
+    print("❌ Modello di ricerca non valido! Usa 'vsm' o 'bm25'")
     reader.close()
     exit()
 
+valid_fields = list(field_mapping_NOGS.keys())
+field = input(f"In che campo vuoi cercare? {valid_fields}: ").strip().lower()
+if field not in field_mapping_NOGS:
+    print("❌ Campo non valido! Usa uno tra:", valid_fields)
+    reader.close()
+    exit()
 query_string = input(f"Inserisci la query per '{field}': ").strip()
 
+'''
 # 📝 Correzione ortografica della query (usando fuzzywuzzy)
 def correct_spelling(query_string):
     """Corregge la query cercando la migliore corrispondenza tramite fuzzy matching"""
     analyzer = StandardAnalyzer()
-    query_parser = QueryParser(field_mapping["title"], analyzer)  # Assumiamo che la ricerca sia sul titolo
+    query_parser = QueryParser(field_mapping_NOGS["title"], analyzer)  # Assumiamo che la ricerca sia sul titolo
     query = query_parser.parse(query_string)  # Crea la query Lucene
 
     # Esegui la ricerca per ottenere i primi 10 risultati
@@ -71,71 +87,59 @@ def correct_spelling(query_string):
             best_match = title
 
     return best_match if best_score >= 80 else query_string  # Restituisce la migliore corrispondenza se il punteggio è sufficiente
-
-query_string = correct_spelling(query_string)  # Applica la correzione alla query
+'''
+''' query_string = correct_spelling(query_string)  # Applica la correzione alla query '''
 
 # 🔍 Creazione dell'analizzatore e del parser
 analyzer = StandardAnalyzer()
-query_parser = QueryParser(field_mapping[field], analyzer)
+query_parser = QueryParser(field_mapping_NOGS[field], analyzer)
 query = query_parser.parse(query_string)
 
-# 🎯 Esegui la ricerca con entrambi i modelli
-top_docs_vsm = searcher_vsm.search(query, 10)
-top_docs_bm25 = searcher_bm25.search(query, 10)
-
-# 📊 Confronto dei risultati
-print(f"\n🔍 Risultati per '{query_string}' nel campo '{field}':\n")
+# 🎯 Esegui la ricerca con PyLucene
+top_docs = searcher.search(query, 10)
 
 # Inizializzo vettori per usarli dopo nel GoldenStandard
-vsm_results = []
-bm25_results = []
-
-print("📌 **VSM (Vector Space Model)**")
-for hit in top_docs_vsm.scoreDocs:
-    doc = reader.storedFields().document(hit.doc)
-    title = doc.get("Title")
-    vsm_results.append(title)
-    print(f"🎬 Titolo: {doc.get('Title')} | ⭐ Score: {hit.score}")
-print("-" * 50)
+retrieved_docs = []
 
 print("📌 **BM25 (Best Matching 25)**")
-for hit in top_docs_bm25.scoreDocs:
+for hit in top_docs.scoreDocs:
     doc = reader.storedFields().document(hit.doc)
     title = doc.get("Title")
-    bm25_results.append(title)
+    retrieved_docs.append(title)
     print(f"🎬 Titolo: {doc.get('Title')} | ⭐ Score: {hit.score}")
 print("-" * 50)
 
-# 🔍 **Ottieni il golden standard da Google**
-API_KEY = "AIzaSyBBRiMjlE0q7x8z9pUFSlt_7dAWa1gZaHQ"
-CX_ID = "c1804e638497b4ba6"
+# Mi connetto ad ElasticSearch per GoldenStandard
+es = Elasticsearch("http://localhost:9200", basic_auth=("elastic", "NaePd5lzxh-rYkg1Aop3"))
+if not es.ping():
+    print("❌ Errore di connessione ad Elasticsearch!")
+    reader.close()
+    exit()
 
-def get_google_results(query):
-    """Interroga l'API di Google e restituisce i primi 10 risultati"""
-    query_with_film = f"{query} site:imdb.com OR site:rottentomatoes.com OR site:metacritic.com"
-    url = f"https://www.googleapis.com/customsearch/v1?q={query_with_film}&key={API_KEY}&cx={CX_ID}"
-    response = requests.get(url).json()
-
-    # Controlliamo cosa ritorna Google
-    if "items" not in response:
-        print("Nessun risultato trovato da Google.")
+def getGoldenStandard(field, query_string):
+    try:
+        search_body = {
+        "query": {
+            "match": {
+                field_mapping_GS[field]: query_string
+            }
+        },
+        "_source": [field_mapping_GS["title"]], # La risposta contiene solo il titolo
+        "size": 10  # Limitato ai primi 10 risultati
+        }
+        response = es.search(index="films", body=search_body)
+        GS = [hit['_source']['title'].lower().strip() for hit in response['hits']['hits']]
+        return GS
+    except Exception as e:
+        print(f"Errore durante la ricerca del Golden Standard: {e}")
         return []
 
-    google_results = [item["title"].lower().strip() for item in response.get("items", [])]
-    return google_results
+golden_standard = getGoldenStandard(field, query_string)
 
-def clean_title(title):
-    """Rimuove dettagli extra dai titoli come anno tra parentesi, 'imdb', 'wikipedia', etc."""
-    title = re.sub(r'\(.*\)', '', title)  # Rimuove tutto ciò che è tra parentesi
-    title = re.sub(r' - .*', '', title)  # Rimuove '- imdb', '- wikipedia', etc.
-    return title.strip()
-
-golden_standard = get_google_results(query_string)
-golden_standard_cleaned = [clean_title(title) for title in golden_standard]  # Pulisce i titoli del golden standard
-
-print(f"\n🏅 **Golden Standard (Google Top Results) per '{query_string}':**")
-for title in golden_standard_cleaned:
-    print(f"✅ {title}")
+# Ritorno i risultati del Golden Standard
+print(f"\n🔍 **Golden Standard da Elasticsearch per {query_string}**")
+for title in golden_standard:
+    print(f"🎬 Titolo: {title}")
 print("-" * 50)
 
 # 📊 **Calcolo Precision, Recall e F1-score**
@@ -158,22 +162,12 @@ def compute_metrics(retrieved, golden):
     return precision, recall, f1
 
 # 🔢 **Calcola metriche**
-precision_vsm, recall_vsm, f1_vsm = compute_metrics(vsm_results, golden_standard_cleaned)
-precision_bm25, recall_bm25, f1_bm25 = compute_metrics(bm25_results, golden_standard_cleaned)
+precision, recall, f1 = compute_metrics(retrieved_docs, golden_standard)
 
 # 📊 **Stampa metriche**
 print("\n📈 **Performance dei Modelli**")
 print("📌 **VSM (Vector Space Model)**")
-print(f"🎯 Precision: {precision_vsm:.3f}")
-print(f"🎯 Recall: {recall_vsm:.3f}")
-print(f"🎯 F1-score: {f1_vsm:.3f}")
+print(f"🎯 Precision: {precision:.3f}")
+print(f"🎯 Recall: {recall:.3f}")
+print(f"🎯 F1-score: {f1:.3f}")
 print("-" * 50)
-
-print("📌 **BM25 (Best Matching 25)**")
-print(f"🎯 Precision: {precision_bm25:.3f}")
-print(f"🎯 Recall: {recall_bm25:.3f}")
-print(f"🎯 F1-score: {f1_bm25:.3f}")
-print("-" * 50)
-
-# 🔚 Chiudi il reader
-reader.close()

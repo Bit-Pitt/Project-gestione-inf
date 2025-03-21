@@ -1,15 +1,18 @@
 import lucene
 import os
+import requests
+from fuzzywuzzy import fuzz
+import re
 from org.apache.lucene.store import FSDirectory
 from org.apache.lucene.index import DirectoryReader
-from org.apache.lucene.search import IndexSearcher, BooleanQuery, BooleanClause
+from org.apache.lucene.search import IndexSearcher, TopDocs
 from org.apache.lucene.queryparser.classic import QueryParser
 from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.search.similarities import ClassicSimilarity, BM25Similarity
-from org.apache.lucene.search import BooleanQuery
 from java.nio.file import Paths
+from org.apache.lucene.search import IndexSearcher, BooleanQuery, BooleanClause
 
-# 🚀 Avvia la JVM
+#🚀 Avvia la JVM
 lucene.initVM()
 
 # 📂 Percorso dell'indice
@@ -68,7 +71,7 @@ for field in fields:
     bq.add(query, BooleanClause.Occur.MUST)
 
 final_query = bq.build()
-
+'''
 # 🎯 Esegui la ricerca
 top_docs = searcher.search(final_query, 10)
 
@@ -83,45 +86,75 @@ for hit in top_docs.scoreDocs:
     print(f"🎬 Titolo: {title} | ⭐ Score: {hit.score}")
 print("-" * 50)
 
-# 🔍 **Golden Standard migliorato**
-def get_golden_standard(searcher, query, top_n=50, score_threshold=5.0):
-    top_docs = searcher.search(query, top_n)
-    golden_standard = []
-    for hit in top_docs.scoreDocs:
-        if hit.score >= score_threshold:
-            doc = reader.storedFields().document(hit.doc)
-            title = doc.get("Title").lower().strip()
-            golden_standard.append(title)
-    return golden_standard
+# 🔍 **Ottieni il golden standard da Google**
+API_KEY = "AIzaSyBBRiMjlE0q7x8z9pUFSlt_7dAWa1gZaHQ"
+CX_ID = "c1804e638497b4ba6"
 
-# 🏅 **Ottieni il Golden Standard**
-golden_standard = get_golden_standard(searcher, final_query)
-print("\n🏅 **Golden Standard:**")
-for title in golden_standard:
+def get_google_results(query):
+    """Interroga l'API di Google e restituisce i primi 10 risultati"""
+    query_with_film = query + "movie"
+    url = f"https://www.googleapis.com/customsearch/v1?q={query_with_film}&key={API_KEY}&cx={CX_ID}"
+    response = requests.get(url).json()
+
+    # Controlliamo cosa ritorna Google
+    if "items" not in response:
+        print("Nessun risultato trovato da Google.")
+        return []
+
+    google_results = [item["title"].lower().strip() for item in response.get("items", [])]
+    return google_results
+
+def clean_title(title):
+    """Rimuove dettagli extra dai titoli come anno tra parentesi, 'imdb', 'wikipedia', etc."""
+    title = re.sub(r'\(.*\)', '', title)  # Rimuove tutto ciò che è tra parentesi
+    title = re.sub(r' - .*', '', title)  # Rimuove '- imdb', '- wikipedia', etc.
+    return title.strip()
+
+golden_standard = get_google_results(query_string)
+golden_standard_cleaned = [clean_title(title) for title in golden_standard]  # Pulisce i titoli del golden standard
+
+print(f"\n🏅 **Golden Standard (Google Top Results) per '{query_string}':**")
+for title in golden_standard_cleaned:
     print(f"✅ {title}")
 print("-" * 50)
 
 # 📊 **Calcolo Precision, Recall e F1-score**
 def compute_metrics(retrieved, golden):
-    retrieved_set = set([r.lower().strip() for r in retrieved])
-    golden_set = set([g.lower().strip() for g in golden])
-    true_positives = len(retrieved_set & golden_set)
-    retrieved_count = len(retrieved_set)
-    golden_count = len(golden_set)
+    """Calcola Precision, Recall e F1-score con fuzzy matching"""
+    true_positives = 0
+    for retrieved_title in retrieved:
+        for golden_title in golden:
+            if fuzz.ratio(retrieved_title.lower(), golden_title.lower()) >= 80:  # Se la similarità è alta
+                true_positives += 1
+                break  # Evita di contare lo stesso retrieved più volte
+
+    retrieved_count = len(retrieved)
+    golden_count = len(golden)
+
     precision = true_positives / retrieved_count if retrieved_count > 0 else 0
     recall = true_positives / golden_count if golden_count > 0 else 0
     f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+
     return precision, recall, f1
 
 # 🔢 **Calcola metriche**
-precision, recall, f1 = compute_metrics(retrieved_results, golden_standard)
+precision_vsm, recall_vsm, f1_vsm = compute_metrics(vsm_results, golden_standard_cleaned)
+precision_bm25, recall_bm25, f1_bm25 = compute_metrics(bm25_results, golden_standard_cleaned)
 
 # 📊 **Stampa metriche**
-print("\n📈 **Performance del Modello**")
-print(f"🎯 Precision: {precision:.3f}")
-print(f"🎯 Recall: {recall:.3f}")
-print(f"🎯 F1-score: {f1:.3f}")
+print("\n📈 **Performance dei Modelli**")
+print("📌 **VSM (Vector Space Model)**")
+print(f"🎯 Precision: {precision_vsm:.3f}")
+print(f"🎯 Recall: {recall_vsm:.3f}")
+print(f"🎯 F1-score: {f1_vsm:.3f}")
 print("-" * 50)
 
+print("📌 **BM25 (Best Matching 25)**")
+print(f"🎯 Precision: {precision_bm25:.3f}")
+print(f"🎯 Recall: {recall_bm25:.3f}")
+print(f"🎯 F1-score: {f1_bm25:.3f}")
+print("-" * 50)
+'''
+print (final_query)
 # 🔚 Chiudi il reader
 reader.close()
