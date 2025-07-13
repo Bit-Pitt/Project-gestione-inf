@@ -144,6 +144,28 @@ def compute_metrics(retrieved, golden):
 
     return precision, recall, f1
 
+from math import log2
+
+def compute_ndcg(retrieved, golden, k=10):
+    """Calcola NDCG a k per una lista di risultati rispetto al golden standard"""
+    golden_lower = [g.lower() for g in golden]
+    
+    # Calcola gain binario (1 se match fuzzy, 0 altrimenti)
+    gains = []
+    for r in retrieved[:k]:
+        match = any(fuzz.ratio(r.lower(), g) >= 80 for g in golden_lower)
+        gains.append(1 if match else 0)
+    
+    # DCG
+    dcg = sum(g / log2(i + 2) for i, g in enumerate(gains))
+    
+    # IDCG (gains ideali: tutti i rilevanti nei primi posti)
+    ideal_gains = [1] * min(len(golden), k)
+    idcg = sum(g / log2(i + 2) for i, g in enumerate(ideal_gains))
+    
+    ndcg = dcg / idcg if idcg > 0 else 0
+    return ndcg
+
 # 🔢 **Calcola metriche**
 for model_name, retrieved_docs in result_by_model.items():
     precision, recall, f1 = compute_metrics(retrieved_docs, golden_standard)
@@ -151,4 +173,44 @@ for model_name, retrieved_docs in result_by_model.items():
     print(f"🎯 Precision: {precision:.3f}")
     print(f"🎯 Recall: {recall:.3f}")
     print(f"🎯 F1-score: {f1:.3f}")
+    print(f"🎯 NDCG: {compute_ndcg(retrieved_docs, golden_standard):.3f}")
     print("-" * 50)
+
+import matplotlib.pyplot as plt
+
+def precision_recall_curve(retrieved, golden):
+    precisions = []
+    recalls = []
+    true_positives = 0
+    golden_lower = [g.lower() for g in golden]
+    matched_golden = set()
+
+    for i, r in enumerate(retrieved, start=1):
+        for g in golden_lower:
+            if g not in matched_golden and fuzz.ratio(r.lower(), g) >= 80:
+                true_positives += 1
+                matched_golden.add(g)
+                break
+        precision = true_positives / i
+        recall = true_positives / len(golden) if golden else 0
+        precisions.append(precision)
+        recalls.append(recall)
+    
+    return recalls, precisions
+
+def plot_precision_recall(results_dict, golden_standard):
+    plt.figure()
+    for model, retrieved in results_dict.items():
+        recalls, precisions = precision_recall_curve(retrieved, golden_standard)
+        plt.plot(recalls, precisions, marker='o', label=model)
+    
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.title('Precision vs Recall')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+    return
+
+plot_precision_recall(result_by_model, golden_standard)
