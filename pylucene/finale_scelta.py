@@ -5,7 +5,7 @@ from fuzzywuzzy import fuzz
 from elasticsearch import Elasticsearch
 from org.apache.lucene.store import FSDirectory
 from org.apache.lucene.index import DirectoryReader
-from org.apache.lucene.search import IndexSearcher
+from org.apache.lucene.search import IndexSearcher, BooleanQuery, BooleanClause
 from org.apache.lucene.queryparser.classic import QueryParser
 from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.search.similarities import ClassicSimilarity, BM25Similarity
@@ -36,7 +36,7 @@ field_mapping_NOGS = {
     "plot": "Plot"
 }
 
-# Mappatura dei campi per il Golden Standard
+# Mappatura dei campi per Elasticsearch (Golden Standard)
 field_mapping_GS = {
     "title": "title",
     "year": "year",
@@ -56,52 +56,39 @@ else:
     reader.close()
     exit()
 
+# 🔍 Selezione multipla di campi
 valid_fields = list(field_mapping_NOGS.keys())
-field = input(f"In che campo vuoi cercare? {valid_fields}: ").strip().lower()
-if field not in field_mapping_NOGS:
-    print("❌ Campo non valido! Usa uno tra:", valid_fields)
+fields = input(f"In quali campi vuoi cercare? {valid_fields} (separati da virgola): ").strip().lower().split(",")
+fields = [f.strip() for f in fields if f.strip() in valid_fields]
+
+if not fields:
+    print("❌ Nessun campo valido selezionato!")
     reader.close()
     exit()
-query_string = input(f"Inserisci la query per '{field}': ").strip()
 
-'''
-# 📝 Correzione ortografica della query (usando fuzzywuzzy)
-def correct_spelling(query_string):
-    """Corregge la query cercando la migliore corrispondenza tramite fuzzy matching"""
-    analyzer = StandardAnalyzer()
-    query_parser = QueryParser(field_mapping_NOGS["title"], analyzer)  # Assumiamo che la ricerca sia sul titolo
-    query = query_parser.parse(query_string)  # Crea la query Lucene
+# 🔍 L'utente inserisce le query UNA SOLA VOLTA per tutti i campi
+queries = {}
+for field in fields:
+    queries[field] = input(f"Inserisci la query per '{field}': ").strip()
 
-    # Esegui la ricerca per ottenere i primi 10 risultati
-    top_docs = searcher_vsm.search(query, 10)
-
-    # Trova la migliore corrispondenza tra i risultati
-    best_match = query_string  # Default: la query originale
-    best_score = 0
-    for hit in top_docs.scoreDocs:
-        doc = reader.storedFields().document(hit.doc)
-        title = doc.get("Title")
-        score = fuzz.ratio(query_string.lower(), title.lower())  # Confronto fuzzy
-        if score > best_score:
-            best_score = score
-            best_match = title
-
-    return best_match if best_score >= 80 else query_string  # Restituisce la migliore corrispondenza se il punteggio è sufficiente
-'''
-''' query_string = correct_spelling(query_string)  # Applica la correzione alla query '''
-
-# 🔍 Creazione dell'analizzatore e del parser
+# 🔍 Costruisci la query in PyLucene
 analyzer = StandardAnalyzer()
-query_parser = QueryParser(field_mapping_NOGS[field], analyzer)
-query = query_parser.parse(query_string)
+bq = BooleanQuery.Builder()
+
+for field, query_string in queries.items():
+    query_parser = QueryParser(field_mapping_NOGS[field], analyzer)
+    query = query_parser.parse(query_string)
+    bq.add(query, BooleanClause.Occur.MUST)
+
+final_query = bq.build()
 
 # 🎯 Esegui la ricerca con PyLucene
-top_docs = searcher.search(query, 10)
+top_docs = searcher.search(final_query, 10)
 
 # Inizializzo vettori per usarli dopo nel GoldenStandard
 retrieved_docs = []
 
-print("📌 **BM25 (Best Matching 25)**")
+print("📌 **Risultati PyLucene**")
 for hit in top_docs.scoreDocs:
     doc = reader.storedFields().document(hit.doc)
     title = doc.get("Title")
@@ -110,22 +97,26 @@ for hit in top_docs.scoreDocs:
 print("-" * 50)
 
 # Mi connetto ad ElasticSearch per GoldenStandard
-es = Elasticsearch("http://localhost:9200", basic_auth=("elastic", "..."))
+es = Elasticsearch("http://localhost:9200", basic_auth=("elastic", "NaePd5lzxh-rYkg1Aop3"))
 if not es.ping():
     print("❌ Errore di connessione ad Elasticsearch!")
     reader.close()
     exit()
 
-def getGoldenStandard(field, query_string):
+# 🔍 Costruzione query Elasticsearch per più campi
+def getGoldenStandard(fields, queries):
     try:
+        match_queries = [{"match": {field_mapping_GS[field]: queries[field]}} for field in fields]
+
         search_body = {
-        "query": {
-            "match": {
-                field_mapping_GS[field]: query_string
-            }
-        },
-        "_source": [field_mapping_GS["title"]], # La risposta contiene solo il titolo
-        "size": 10  # Limitato ai primi 10 risultati
+            "query": {
+                "bool": {
+                    "should": match_queries,
+                    "minimum_should_match": 1  # Almeno una delle query deve matchare
+                }
+            },
+            "_source": [field_mapping_GS["title"]],  # La risposta contiene solo il titolo
+            "size": 10  # Limitato ai primi 10 risultati
         }
         response = es.search(index="films", body=search_body)
         GS = [hit['_source']['title'].lower().strip() for hit in response['hits']['hits']]
@@ -134,12 +125,13 @@ def getGoldenStandard(field, query_string):
         print(f"Errore durante la ricerca del Golden Standard: {e}")
         return []
 
-golden_standard = getGoldenStandard(field, query_string)
+# 🟢 Usiamo le stesse query di BM25/VSM per Elasticsearch
+golden_standard = getGoldenStandard(fields, queries)
 
-# Ritorno i risultati del Golden Standard
-print(f"\n🔍 **Golden Standard da Elasticsearch per {query_string}**")
+# 🔍 Mostra i risultati di Elasticsearch
+print(f"\n🔍 **Golden Standard da Elasticsearch**")
 for title in golden_standard:
-    print(f"🎬 Titolo: {title}")
+    print(f"🏅 Titolo: {title}")
 print("-" * 50)
 
 # 📊 **Calcolo Precision, Recall e F1-score**
@@ -166,8 +158,8 @@ precision, recall, f1 = compute_metrics(retrieved_docs, golden_standard)
 
 # 📊 **Stampa metriche**
 print("\n📈 **Performance dei Modelli**")
-print("📌 **VSM (Vector Space Model)**")
 print(f"🎯 Precision: {precision:.3f}")
 print(f"🎯 Recall: {recall:.3f}")
 print(f"🎯 F1-score: {f1:.3f}")
 print("-" * 50)
+
