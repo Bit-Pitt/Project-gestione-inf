@@ -45,17 +45,6 @@ field_mapping_GS = {
     "plot": "plot"
 }
 
-# 🎯 Input utente
-model_choice = input("Quale modello di ricerca vuoi utilizzare? [vsm/bm25]: ").strip().lower()
-if model_choice == "vsm":
-    searcher = searcher_vsm
-elif model_choice == "bm25":
-    searcher = searcher_bm25
-else:
-    print("❌ Modello di ricerca non valido! Usa 'vsm' o 'bm25'")
-    reader.close()
-    exit()
-
 # 🔍 Selezione multipla di campi
 valid_fields = list(field_mapping_NOGS.keys())
 fields = input(f"In quali campi vuoi cercare? {valid_fields} (separati da virgola): ").strip().lower().split(",")
@@ -83,18 +72,20 @@ for field, query_string in queries.items():
 final_query = bq.build()
 
 # 🎯 Esegui la ricerca con PyLucene
+result_by_model = {}
+
+for model_name, searcher in [("VSM", searcher_vsm), ("BM25", searcher_bm25)]:
+    top_docs = searcher.search(final_query, 10)
+    result_by_model[model_name] = []
+
+    print(f"**Risultati {model_name}**")
+    for hit in top_docs.scoreDocs:
+        doc = reader.storedFields().document(hit.doc)
+        title = doc.get("Title")
+        result_by_model[model_name].append(title)
+        print(f"🎬 Titolo: {doc.get('Title')} | ⭐ Score: {hit.score}")
+    print("-" * 50)
 top_docs = searcher.search(final_query, 10)
-
-# Inizializzo vettori per usarli dopo nel GoldenStandard
-retrieved_docs = []
-
-print("📌 **Risultati PyLucene**")
-for hit in top_docs.scoreDocs:
-    doc = reader.storedFields().document(hit.doc)
-    title = doc.get("Title")
-    retrieved_docs.append(title)
-    print(f"🎬 Titolo: {doc.get('Title')} | ⭐ Score: {hit.score}")
-print("-" * 50)
 
 # Mi connetto ad ElasticSearch per GoldenStandard
 es = Elasticsearch("http://localhost:9200", basic_auth=("elastic", "NaePd5lzxh-rYkg1Aop3"))
@@ -154,12 +145,10 @@ def compute_metrics(retrieved, golden):
     return precision, recall, f1
 
 # 🔢 **Calcola metriche**
-precision, recall, f1 = compute_metrics(retrieved_docs, golden_standard)
-
-# 📊 **Stampa metriche**
-print("\n📈 **Performance dei Modelli**")
-print(f"🎯 Precision: {precision:.3f}")
-print(f"🎯 Recall: {recall:.3f}")
-print(f"🎯 F1-score: {f1:.3f}")
-print("-" * 50)
-
+for model_name, retrieved_docs in result_by_model.items():
+    precision, recall, f1 = compute_metrics(retrieved_docs, golden_standard)
+    print(f"\n📊 **Metriche per il modello {model_name}**")
+    print(f"🎯 Precision: {precision:.3f}")
+    print(f"🎯 Recall: {recall:.3f}")
+    print(f"🎯 F1-score: {f1:.3f}")
+    print("-" * 50)
