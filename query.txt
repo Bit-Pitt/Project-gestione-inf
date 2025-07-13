@@ -40,10 +40,15 @@ Query: family dealing with major loss  AND genre:drama
 
 9)
 Need: Qualsiasi film di avventura con una grande ricerca o viaggio epico.
-Query: quest OR plot:epic journey AND genre:adventure
+Query:  plot:epic journey 
 [query vaga]
 
 10)
 Need: Cerco un film in cui il protagonista affronta grandi difficoltà e scopre qualcosa di importante su se stesso.
 Query: "a character faces challenges and learns something important about themselves"
 [trama generica]
+
+
+11) 
+Need: Cerco un film con personaggi che abbiano dei superpoteri
+Query: plot:man with superpower

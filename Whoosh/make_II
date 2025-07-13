@@ -64,15 +64,32 @@ print("Indicizzazione primo II completata!")
 
 
 # Connessione al servizio di  Elasticsearch 
-# NECESSITA CHE IL SERVIZIO SIA ATTIVO (vari modi per scaricarlo, io lo ho scaricato da internet (elastic.co/download))
+# NECESSITA CHE IL SERVIZIO SIA ATTIVO 
+# vai nella cartella "D:\Downloads\elasticsearch-9.0.3-windows-x86_64\elasticsearch-9.0.3\bin> .\elasticsearch.bat"
 # estratta la cartella avvi il servizio ".\elasticsearch.bat"
-es = Elasticsearch("http://localhost:9200")
 
-# Nome dell'indice
-index_name = "II_GoldStandard"
+from whoosh.index import create_in
+from whoosh.fields import *
+import os
+import pandas as pd
+from elasticsearch import Elasticsearch
 
-# Definizione dello schema (mappatura dei campi)
-mapping = {
+# --- Connessione a Elasticsearch ---
+es = Elasticsearch("http://172.26.112.1:9200")
+
+if es.ping():
+    print(" Connessione riuscita a Elasticsearch!")
+else:
+    print(" Errore di connessione a Elasticsearch!")
+
+#es.indices.delete(index="goldstandard_index")
+#es.indices.delete(index="goldstandard_vsm")
+
+# --- Primo indice: BM25 (default) ---
+
+
+bm25_index_name = "goldstandard_index"
+bm25_mapping = {
     "settings": {
         "analysis": {
             "analyzer": {
@@ -84,25 +101,67 @@ mapping = {
     },
     "mappings": {
         "properties": {
-            "title": {"type": "text", "analyzer": "standard"},  
-            "year": {"type": "text"},
-            "genre": {"type": "text"},  
+            "title":   {"type": "text", "analyzer": "standard"},
+            "year":    {"type": "text"},
+            "genre":   {"type": "text"},
             "country": {"type": "text"},
-            "plot": {"type": "text", "analyzer": "standard"}
+            "plot":    {"type": "text", "analyzer": "standard"}
+        }
+    }
+}
+indicizza_bm = True
+if not es.indices.exists(index=bm25_index_name):
+    es.indices.create(index=bm25_index_name, body=bm25_mapping)
+    print(f" Indice '{bm25_index_name}' creato.")
+else:
+    indicizza_bm = False
+    print(f" L'indice '{bm25_index_name}' esiste già.")
+
+
+# --- Secondo indice: TF-IDF/VSM ---
+vsm_index_name = "goldstandard_vsm"
+vsm_mapping = {
+    "settings": {
+        "similarity": {
+            "my_similarity": {
+                "type": "BM25",    # PARAMETRI IMPOSTATI PER RENDERE LA SIMILARITA' SIMILE AL VSM
+                "b": 0.0,        # No length normalization
+                "k1": 1.0        # TF scaling similar to classic TF-IDF
+            }
+        },
+        "analysis": {
+            "analyzer": {
+                "standard_analyzer": {
+                    "type": "standard"
+                }
+            }
+        }
+    },
+    "mappings": {
+        "properties": {
+            "title":   {"type": "text", "similarity": "my_similarity", "analyzer": "standard"},
+            "year":    {"type": "text", "similarity": "my_similarity"},
+            "genre":   {"type": "text", "similarity": "my_similarity"},
+            "country": {"type": "text", "similarity": "my_similarity"},
+            "plot":    {"type": "text", "similarity": "my_similarity", "analyzer": "standard"}
         }
     }
 }
 
-# Creazione dell'indice in Elasticsearch con la struttura assegnata ("mapping")
-if not es.indices.exists(index=index_name):
-    es.indices.create(index=index_name, body=mapping)
+indicizza_vsm=True
+if not es.indices.exists(index=vsm_index_name):
+    es.indices.create(index=vsm_index_name, body=vsm_mapping)
+    print(f" Indice '{vsm_index_name}' creato con TF-IDF (classic similarity).")
+else:
+    indicizza_vsm=False
+    print(f" L'indice '{vsm_index_name}' esiste già.")
 
-# carico il dataset
-file = os.path.join("dataset-constr", "films.csv") 
+
+# --- Carica dataset CSV ---
+file = os.path.join("dataset-constr", "films.csv")
 df = pd.read_csv(file)
 
-
-# Inserimento dati in Elasticsearch
+# --- Indicizzazione su entrambi gli indici ---
 for _, film in df.iterrows():
     doc = {
         "title": film["Title"],
@@ -111,6 +170,15 @@ for _, film in df.iterrows():
         "country": film["Country"],
         "plot": film["Plot"]
     }
-    es.index(index=index_name, document=doc)
+    # indicizza su entrambi
+    if indicizza_bm:
+        es.index(index=bm25_index_name, document=doc)
+    if indicizza_vsm:
+        es.index(index=vsm_index_name, document=doc)
 
-print("Indicizzazione II gold standard completata!")
+if not indicizza_bm:
+    print("Indicizzazione non effettuate per bm (già presente)")
+if not indicizza_bm:
+    print("Indicizzazione non effettuate per vsm (già presente)")
+
+print(" Indicizzazione completata su entrambi gli indici Elasticsearch!")
