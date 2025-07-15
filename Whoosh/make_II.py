@@ -7,19 +7,8 @@ from elasticsearch import Elasticsearch
 # Codice per la creazione dell'indice / degli indici.
 
 
-#Creazione del primo II di Whoosh, utilizzo dello standard Analyzer
+#Creazione del primo II di Whoosh, utilizzo dello standard Analyzer   
 
-    
-'''
-schema = Schema(
-    title=TEXT(stored=True),        #SOLO "TEXT" subirà pre-processing
-    year=ID(stored=True),
-    genre=KEYWORD(stored=True, commas=True), 
-    country=KEYWORD(stored=True),  
-    plot=TEXT(stored=False),                                                                                   
-)
-'''
-'''
 schema = Schema(
     title=TEXT(stored=True),        
     year=TEXT(stored=True),
@@ -32,37 +21,80 @@ directory = os.path.join("Whoosh", "II_stdAnalyzer")            #Soluzione porta
 if not os.path.exists(directory):
     os.makedirs(directory)     
 
-ix = create_in(directory, schema)
+    ix = create_in(directory, schema)
 
-writer = ix.writer()          
-
-
-# Carica il dataset CSV
-file = os.path.join("dataset-constr", "films.csv") 
-df = pd.read_csv(file)
+    writer = ix.writer()          
 
 
-
-# Aggiungi i documenti all'indice specificando i vari campi
-for indice, films in df.iterrows():
-    writer.add_document(    title=films["Title"], 
-                            year= str(films["Year"]),
-                            genre=films["Genre"],
-                            country=films["Country"],
-                            plot=films["Plot"]
-                               )
- 
-writer.commit()
+    # Carica il dataset CSV
+    file = os.path.join("dataset-constr", "films.csv") 
+    df = pd.read_csv(file)
 
 
-print("Indicizzazione primo II completata!")
 
+    # Aggiungi i documenti all'indice specificando i vari campi
+    for indice, films in df.iterrows():
+        writer.add_document(    title=films["Title"], 
+                                year= str(films["Year"]),
+                                genre=films["Genre"],
+                                country=films["Country"],
+                                plot=films["Plot"]
+                                )
+    
+    writer.commit()
+
+    print("Indicizzazione primo II completata!")
+else:
+    print("Indice standard già esistente")
+
+
+
+import spacy
+''' 
+    Creazione dell'indice con lemmatization
 '''
+nlp = spacy.load("en_core_web_sm")  
+
+def lemmatize_text(text):
+    string = nlp(str(text))
+    return " ".join([token.lemma_ for token in string if not token.is_punct and not token.is_space])
+
+# === Schema Whoosh ===
+schema = Schema(
+    title=TEXT(stored=True),
+    year=TEXT(stored=True),
+    genre=TEXT(stored=True),
+    country=TEXT(stored=True),
+    plot=TEXT(stored=False)
+)
+
+directory = os.path.join("Whoosh", "II_lemmatized")
+if not os.path.exists(directory):
+    os.makedirs(directory)
+
+    ix = create_in(directory, schema)
+    writer = ix.writer()
+
+    # === Carica dataset e indicizza ===
+    file = os.path.join("dataset-constr", "films.csv") 
+    df = pd.read_csv(file)
+
+    for _, film in df.iterrows():
+        writer.add_document(
+            title=lemmatize_text(film["Title"]),
+            year=str(film["Year"]),
+            genre=lemmatize_text(film["Genre"]),
+            country=lemmatize_text(film["Country"]),
+            plot=lemmatize_text(film["Plot"])
+        )
+
+    writer.commit()
+    print("Indicizzazione Whoosh con lemmatizzazione completata.")
+else:
+    print("Indice con lemmatizer già esistente")
 
 
-#Creazione del'II del Gold Standard
-
-
+#Creazione del'II del Gold Standard  (no stem)
 # Connessione al servizio di  Elasticsearch 
 # NECESSITA CHE IL SERVIZIO SIA ATTIVO 
 # vai nella cartella "D:\Downloads\elasticsearch-9.0.3-windows-x86_64\elasticsearch-9.0.3\bin> .\elasticsearch.bat"
@@ -148,6 +180,35 @@ vsm_mapping = {
     }
 }
 
+# ----- 2. Indice Lemmatized  -----
+lemm_index = "goldstandard_lemmatized"
+lemm_mapping = {
+    "settings": {
+        "similarity": {
+            "my_similarity": {
+                "type": "BM25",
+                "k1": 1.0,
+                "b": 0.0
+            }
+        },
+        "analysis": {
+            "analyzer": {
+                "standard_analyzer": {"type": "standard"}
+            }
+        }
+    },
+    "mappings": {
+        "properties": {
+            "title":   {"type": "text", "similarity": "my_similarity", "analyzer": "standard"},
+            "year":    {"type": "text", "similarity": "my_similarity"},
+            "genre":   {"type": "text", "similarity": "my_similarity"},
+            "country": {"type": "text", "similarity": "my_similarity"},
+            "plot":    {"type": "text", "similarity": "my_similarity", "analyzer": "standard"}
+        }
+    }
+}
+
+
 indicizza_vsm=True
 if not es.indices.exists(index=vsm_index_name):
     es.indices.create(index=vsm_index_name, body=vsm_mapping)
@@ -182,3 +243,24 @@ if not indicizza_bm:
     print("Indicizzazione non effettuate per vsm (già presente)")
 
 print(" Indicizzazione completata su entrambi gli indici Elasticsearch!")
+
+
+
+# Codice per l'indice con lemmatizer
+if not es.indices.exists(index=lemm_index):
+    es.indices.create(index=lemm_index, body=lemm_mapping)
+    print(f"Indice '{lemm_index}' (VSM-like) creato.")
+
+    for _, film in df.iterrows():
+        lemm_doc = {
+            "title": lemmatize_text(film["Title"]),
+            "year": str(film["Year"]),
+            "genre": lemmatize_text(film["Genre"]),
+            "country": lemmatize_text(film["Country"]),
+            "plot": lemmatize_text(film["Plot"])
+        }
+        es.index(index=lemm_index, document=lemm_doc)
+
+    print("Indicizzazione completata ")
+else:
+    print("Indince con lemmatizer già creato")

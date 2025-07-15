@@ -5,7 +5,6 @@ import os
 import matplotlib.pyplot as plt
 from math import log2
 from elasticsearch import Elasticsearch 
-import numpy as np
 
 
 
@@ -44,7 +43,7 @@ def compute_metrics(retrieved, golden):
     true_positives = 0
     for r in retrieved:
         for g in golden:
-            if fuzz.ratio(r.lower(), g.lower()) >= 95:
+            if fuzz.ratio(r.lower(), g.lower()) >= 100:
                 true_positives += 1
                 break
     precision = true_positives / len(retrieved) if retrieved else 0
@@ -56,7 +55,7 @@ def compute_ndcg(retrieved, golden, k=10):
     golden_lower = [g.lower() for g in golden]
     gains = []
     for r in retrieved[:k]:
-        match = any(fuzz.ratio(r.lower(), g) >= 95 for g in golden_lower)
+        match = any(fuzz.ratio(r.lower(), g) >= 100 for g in golden_lower)
         gains.append(1 if match else 0)
     dcg = sum(g / log2(i + 2) for i, g in enumerate(gains))
     ideal_gains = [1] * min(len(golden), k)
@@ -76,7 +75,7 @@ def precision_recall_curve_interpolated(retrieved, golden, recall_levels=None):
     matched_golden = set()
     for i, r in enumerate(retrieved, start=1):
         for g in golden_lower:
-            if g not in matched_golden and fuzz.ratio(r.lower(), g) >= 95:
+            if g not in matched_golden and fuzz.ratio(r.lower(), g) >= 100:
                 true_positives += 1
                 matched_golden.add(g)
                 break
