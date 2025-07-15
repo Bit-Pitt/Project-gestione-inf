@@ -122,6 +122,6 @@ plot_final_metric_summary_barplot(
     recall_dict,
     f1_dict,
     ndcg_dict,
-    "grafici/final_metric_summary_barplot.png"
+    "Whoosh/grafici/final_metric_summary_barplot.png"
 )
 
