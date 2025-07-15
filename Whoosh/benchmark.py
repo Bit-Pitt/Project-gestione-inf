@@ -111,12 +111,12 @@ for entry in query_data:
 
 
 # --- Plotting grafici tramite funzioni di "bench_plotting" ---
-plot_precision_recall_with_variance(avg_curves, "grafici/precision_recall_curve_media_interpolated.png")
-plot_per_query_precision_recall(avg_curves, "grafici/subplot_per_query_precision_recall.png")
-plot_querywise_precision_bar_chart(precision_dict, "grafici/precision_per_query_bar_chart.png")
-plot_querywise_recall_bar_chart(recall_dict, "grafici/recall_per_query_bar_chart.png")
-plot_querywise_ndcg_bar_chart(ndcg_dict, "grafici/ndcg_per_query_bar_chart.png")
-plot_querywise_rprecision_bar_chart(r_precision_dict, "grafici/rprecision_diff_bar_chart.png")
+plot_precision_recall_with_variance(avg_curves, "Whoosh/grafici/precision_recall_curve_media_interpolated.png")
+plot_per_query_precision_recall(avg_curves, "Whoosh/grafici/subplot_per_query_precision_recall.png")
+plot_querywise_precision_bar_chart(precision_dict, "Whoosh/grafici/precision_per_query_bar_chart.png")
+plot_querywise_recall_bar_chart(recall_dict, "Whoosh/grafici/recall_per_query_bar_chart.png")
+plot_querywise_ndcg_bar_chart(ndcg_dict, "Whoosh/grafici/ndcg_per_query_bar_chart.png")
+plot_querywise_rprecision_bar_chart(r_precision_dict, "Whoosh/grafici/rprecision_diff_bar_chart.png")
 plot_final_metric_summary_barplot(
     precision_dict,
     recall_dict,
