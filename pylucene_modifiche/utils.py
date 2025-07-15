@@ -32,7 +32,7 @@ def compute_metrics(retrieved, golden):
     true_positives = 0
     for r in retrieved:
         for g in golden:
-            if fuzz.ratio(r.lower(), g.lower()) >= 100:
+            if r.lower() == g.lower():
                 true_positives += 1
                 break
     precision = true_positives / len(retrieved) if retrieved else 0
@@ -44,7 +44,7 @@ def compute_ndcg(retrieved, golden, k=10):
     golden_lower = [g.lower() for g in golden]
     gains = []
     for r in retrieved[:k]:
-        match = any(fuzz.ratio(r.lower(), g) >= 100 for g in golden_lower)
+        match = r.lower() in golden_lower
         gains.append(1 if match else 0)
     dcg = sum(g / log2(i + 2) for i, g in enumerate(gains))
     ideal_gains = [1] * min(len(golden), k)
@@ -64,7 +64,7 @@ def precision_recall_curve_interpolated(retrieved, golden, recall_levels=None):
     matched_golden = set()
     for i, r in enumerate(retrieved, start=1):
         for g in golden_lower:
-            if g not in matched_golden and fuzz.ratio(r.lower(), g) >= 100:
+            if g not in matched_golden and r.lower() == g:
                 true_positives += 1
                 matched_golden.add(g)
                 break
@@ -94,16 +94,12 @@ def average_precision_recall_curve_interpolated(retrieved, golden1, golden2, rec
 # Computa la r@precision
 def compute_r_precision_at_k(retrieved, golden, k=3):
     retrieved_k = retrieved[:k]
-    matched = 0
     golden_lower = [g.lower() for g in golden]
-
-    for r in retrieved_k:
-        for g in golden_lower:
-            if fuzz.ratio(r.lower(), g) >= 95:
-                matched += 1
-                break
-
+    matched = sum(1 for r in retrieved_k if r.lower() in golden_lower)
     return matched / k if k else 0
+
+
+
 
 
 # --- Plot precision-recall interpolated curve media e salvataggio ---
