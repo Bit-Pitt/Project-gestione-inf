@@ -6,12 +6,13 @@ Query: action movie set in New York AND country:United States AND genre:action
 
 2)
 Need: Cerco un film horror che parli di una maledizione.
-Query: curse* AND genre:horror
+Query: Curse* causes victims to kill* themselves AND genre:horror
 [uso di wildcard]
 
 3)
 Need: Voglio un film di fantascienza o fantasy che parla di alieni
-Query: alien AND  genre:science fiction OR genre:fantasy 
+Query: fantasy or science fictions or action movie that talks about aliens
+
 
 4)
 Need: Cerco un film in cui un uomo scopre che la sua vita è un enorme show televisivo (es. The Truman Show).
@@ -19,20 +20,20 @@ Query: a person unknowngly lives inside a massive tv shw
 [tolerant retrieval]
 
 5)
-Need: Voglio trovare "The Godfather".
-Query: title:Godfather AND year:1972
-[query specifica]
+Need: Voglio trovare il noto film di ragazzi che volano sulla scopa e conoscono la magia.
+Query: young wizard school magic* battle dark* force* wand
+[query specifica ma senza conoscere il nome del film/saga]
 
 6)
-Need: Un film in cui un uomo vive la sua vita senza sapere di essere osservato costantemente.
-Query: a guy who has no idea his life is being watched every moment
-[uso di parole "simili" a quelle usate nella trama di "the truman show"]
+Need: Un film in cui un ragazzo scopre di avere dei "super poteri"
+Query: A boy discovers he has supernatural abilities and is drawn into a hidden world of ancient powers.
+[query generica]
 
 
 7)
-Need: Voglio un thriller americano ambientato a Londra con una storia di vendetta.
-Query: reven* AND genre:thriller AND country:United States AND plot:*London*
-[computazionalmente costosa]
+Need: La necessità è quella di scoprire il nome del noto film che si incentra sul ritrovare un glorioso anello
+Query: A group of unlikely heroes must destroy a powerful artifact while being hunted by ancient evil across vast mythical lands.
+[query specifica]
 
 8)
 Need: Un film  drammatico che parli di una famiglia che affronta una grande tragedia.
@@ -41,14 +42,35 @@ Query: family dealing with major loss  AND genre:drama
 9)
 Need: Qualsiasi film di avventura con una grande ricerca o viaggio epico.
 Query:  plot:epic journey 
-[query vaga]
+[query vaga corta]
 
 10)
 Need: Cerco un film in cui il protagonista affronta grandi difficoltà e scopre qualcosa di importante su se stesso.
-Query: "a character faces challenges and learns something important about themselves"
-[trama generica]
+Query: A character goes through major personal struggles and faces overwhelming challenges. Along the way, they uncover a deep truth about themselves or their past.
+[trama generica lunga]
 
 
 11) 
 Need: Cerco un film con personaggi che abbiano dei superpoteri
 Query: plot:man with superpower
+[specifica corta]
+
+12)
+Need: Cerco un film con un detective che indaga su omicidi misteriosi
+Query: plot:detective investigates murders
+[specifica corta]
+
+13) 
+Need: Ricerca di un film horror ambientato in americano
+Query: Horror movie with kill*  AND country:America United States
+[composizione di field]
+
+14)
+Need: Ricerca di un film con titolo che abbia "god"
+Query: god
+[ricerca specifica per titolo]
+
+15)
+Need: Cerco un film in cui un mostro attacca una cittadina solo di notte.
+Query: A small town is terrorized by a mysterious creature that appears only at night.
+[generica media]
