@@ -59,6 +59,9 @@ def lemmatize_text(text):
     string = nlp(str(text))
     return " ".join([token.lemma_ for token in string if not token.is_punct and not token.is_space])
 
+#print(lemmatize_text("lived , did , went"))
+
+
 # === Schema Whoosh ===
 schema = Schema(
     title=TEXT(stored=True),
@@ -92,6 +95,48 @@ if not os.path.exists(directory):
     print("Indicizzazione Whoosh con lemmatizzazione completata.")
 else:
     print("Indice con lemmatizer già esistente")
+
+'''
+    INDICE con STEMMING
+'''
+from whoosh.analysis import StemmingAnalyzer
+
+# === Schema con StemmingAnalyzer ===
+stem_analyzer = StemmingAnalyzer()
+schema = Schema(
+    title=TEXT(stored=True, analyzer=stem_analyzer),
+    year=TEXT(stored=True),
+    genre=TEXT(stored=True, analyzer=stem_analyzer),
+    country=TEXT(stored=True, analyzer=stem_analyzer),
+    plot=TEXT(stored=False, analyzer=stem_analyzer)
+)
+
+directory = os.path.join("Whoosh", "II_stemmed")
+if not os.path.exists(directory):
+    os.makedirs(directory)
+
+    ix = create_in(directory, schema)
+    writer = ix.writer()
+
+    # === Carica dataset e indicizza ===
+    file = os.path.join("dataset-constr", "films.csv") 
+    df = pd.read_csv(file)
+
+    for _, film in df.iterrows():
+        writer.add_document(
+            title=str(film["Title"]),
+            year=str(film["Year"]),
+            genre=str(film["Genre"]),
+            country=str(film["Country"]),
+            plot=str(film["Plot"])
+        )
+
+    writer.commit()
+    print("Indicizzazione Whoosh con stemming completata.")
+else:
+    print("Indice con stemming già esistente")
+
+
 
 
 #Creazione del'II del Gold Standard  (no stem)
@@ -208,6 +253,38 @@ lemm_mapping = {
     }
 }
 
+# ----- 3. Indice Stemmed  -----  "snowball" filter è lo stemmer di elastic search
+stemmed_index = "goldstandard_stemmed"
+stemmed_mapping = {
+    "settings": {
+        "similarity": {
+            "my_similarity": {
+                "type": "BM25",
+                "k1": 1.0,
+                "b": 0.0
+            }
+        },
+        "analysis": {
+            "analyzer": {
+                "stemmed_english": {
+                    "tokenizer": "standard",
+                    "filter": ["lowercase", "snowball"],
+                    "type": "custom"
+                }
+            }
+        }
+    },
+    "mappings": {
+        "properties": {
+            "title":   {"type": "text", "similarity": "my_similarity", "analyzer": "stemmed_english"},
+            "year":    {"type": "text", "similarity": "my_similarity"},
+            "genre":   {"type": "text", "similarity": "my_similarity", "analyzer": "stemmed_english"},
+            "country": {"type": "text", "similarity": "my_similarity", "analyzer": "stemmed_english"},
+            "plot":    {"type": "text", "similarity": "my_similarity", "analyzer": "stemmed_english"}
+        }
+    }
+}
+
 
 indicizza_vsm=True
 if not es.indices.exists(index=vsm_index_name):
@@ -264,3 +341,24 @@ if not es.indices.exists(index=lemm_index):
     print("Indicizzazione completata ")
 else:
     print("Indince con lemmatizer già creato")
+
+
+
+# Controllo ed eventuale creazione + indicizzazione (stemmed es)
+if not es.indices.exists(index=stemmed_index):
+    es.indices.create(index=stemmed_index, body=stemmed_mapping)
+    print(f"Indice '{stemmed_index}' (VSM-like con stemming) creato.")
+
+    for _, film in df.iterrows():
+        doc_stemmed = {
+            "title": film["Title"],
+            "year": str(film["Year"]),
+            "genre": film["Genre"],
+            "country": film["Country"],
+            "plot": film["Plot"]
+        }
+        es.index(index=stemmed_index, document=doc_stemmed)
+
+    print("Indicizzazione es con stemming completata.")
+else:
+    print("Indice es con stemming già esistente.")
