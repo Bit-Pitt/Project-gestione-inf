@@ -1,0 +1,4 @@
+whoosh
+elasticsearch
+nltk
+spacy
