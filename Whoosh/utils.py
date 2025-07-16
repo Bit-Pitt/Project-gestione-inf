@@ -3,7 +3,9 @@ from whoosh.query import And
 import os
 import matplotlib.pyplot as plt
 from math import log2
-from elasticsearch import Elasticsearch 
+from elasticsearch import Elasticsearch
+import matplotlib.pyplot as plt
+import numpy as np 
 
 
 
@@ -117,29 +119,48 @@ def compute_r_precision_at_k(retrieved, golden, k=3):
     return matched / k if k else 0
 
 
-# --- Plot precision-recall interpolated curve media e salvataggio ---
-def plot_average_precision_recall_curve_interpolated(results_dict, golden_standard_bm25, golden_standard_vsm):
-    output_dir = "grafici"
-    os.makedirs(output_dir, exist_ok=True)
-    
-    plt.figure(figsize=(8,6))
-    
-    for model, retrieved in results_dict.items():
-        rec_levels, avg_prec = average_precision_recall_curve_interpolated(
-            retrieved, golden_standard_bm25, golden_standard_vsm)
-        plt.plot(rec_levels, avg_prec, marker='o', label=model)
-    
-    plt.xlabel('Recall medio')
-    plt.ylabel('Precision media')
-    plt.title('Curve Precision-Recall medie (tra i due Golden Standard)')
-    plt.grid(True)
+
+
+# Questa plotta per un numero generico di modelli che gli vengono passati
+# è stata creata per lo script interattivo, mostererà la precisione ai livelli di recall per tutti i modelli
+# a cui è stato "collegato"  il golden std
+def plot_interpolated_precision_curves(results_dict, golden_dict, save_path="precision_curve.png"):
+    """
+    results_dict: dict -> {model_name: [retrieved_docs]}
+    golden_dict: dict -> {model_name: [golden_docs]} o un singolo golden condiviso
+    """
+    recall_levels = np.linspace(0.0, 1.0, 11)
+    plt.figure(figsize=(10, 6))
+
+    for model_name, retrieved_docs in results_dict.items():
+        if isinstance(golden_dict, dict):
+            golden = golden_dict[model_name]
+        else:
+            golden = golden_dict
+
+        precisions = []
+        for recall_level in recall_levels:
+            max_prec = 0.0
+            for k in range(1, len(retrieved_docs) + 1):
+                retrieved_k = retrieved_docs[:k]
+                rel_docs = len([doc for doc in retrieved_k if doc in golden])
+                total_relevant = len([doc for doc in golden])
+                current_recall = rel_docs / total_relevant if total_relevant > 0 else 0.0
+                if current_recall >= recall_level:
+                    precision_at_k = rel_docs / k
+                    max_prec = max(max_prec, precision_at_k)
+            precisions.append(max_prec)
+
+        plt.plot(recall_levels, precisions, marker='o', label=model_name)
+
+    plt.xlabel("Recall")
+    plt.ylabel("Interpolated Precision")
+    plt.title("Interpolated Precision at Standard Recall Levels")
     plt.legend()
-    plt.tight_layout()
-    
-    filename = os.path.join(output_dir, "precision_recall_curve_media_interpolated.png")
-    plt.savefig(filename)
-    plt.close()
-    print(f"Grafico salvato in: {filename}")
+    plt.grid(True)
+    plt.savefig(save_path)  # Salva l'immagine
+    print(f" Grafico salvato come '{save_path}'")
+
 
 
 
