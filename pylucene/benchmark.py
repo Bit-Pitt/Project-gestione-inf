@@ -114,12 +114,4 @@ plot_final_metric_summary_barplot(
     "./grafici/final_metric_summary_barplot.png"
 )
 
-print("=== R@3 BM25 ===")
-print(r_precision_dict["BM25"])
-print("=== R@3 TF-IDF ===")
-print(r_precision_dict["TF-IDF"])
-print("=== Differenza ===")
-print([bm25 - tfidf for bm25, tfidf in zip(r_precision_dict["BM25"], r_precision_dict["TF-IDF"])])
-
-
 reader.close()

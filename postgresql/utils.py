@@ -3,6 +3,7 @@ import os
 import matplotlib.pyplot as plt
 from math import log2
 from elasticsearch import Elasticsearch
+import requests
 
 
 es = Elasticsearch("http://localhost:9200", basic_auth=("elastic", "NaePd5lzxh-rYkg1Aop3"))
@@ -11,19 +12,28 @@ if not es.ping():
     exit()
 
 def get_golden_standard(fields, queries, index_name):
-    match_queries = [{"match": {f: queries[f]}} for f in fields]
-    body = {
-        "query": {
-            "bool": {
-                "should": match_queries,
-                "minimum_should_match": 1
-            }
-        },
-        "_source": ["title"],
-        "size": 10
-    }
-    res = es.search(index=index_name, body=body)
-    return [hit['_source']['title'] for hit in res['hits']['hits']]
+    golden = []
+
+    for query in queries:
+        # Costruisci il corpo con i campi presenti nella query
+        match_queries = [{"match": {f: query[f]}} for f in fields if f in query]
+        body = {
+            "query": {
+                "bool": {
+                    "should": match_queries,
+                    "minimum_should_match": 1
+                }
+            },
+            "_source": ["title"],
+            "size": 10
+        }
+        res = es.search(index=index_name, body=body)
+        titles = [hit["_source"]["title"] for hit in res["hits"]["hits"]]
+        golden.append(titles)
+
+    return golden
+
+
 
 
 
@@ -97,10 +107,6 @@ def compute_r_precision_at_k(retrieved, golden, k=3):
     golden_lower = [g.lower() for g in golden]
     matched = sum(1 for r in retrieved_k if r.lower() in golden_lower)
     return matched / k if k else 0
-
-
-
-
 
 # --- Plot precision-recall interpolated curve media e salvataggio ---
 def plot_average_precision_recall_curve_interpolated(results_dict, golden_standard_bm25, golden_standard_vsm):
