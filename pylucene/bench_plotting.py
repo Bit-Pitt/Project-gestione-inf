@@ -10,27 +10,23 @@ def compute_avg_and_std(curves):
     return avg, std
 
 # Funzione per plottare la precisione ai livelli di recall con varianza (std)
-def plot_precision_recall_with_variance(avg_curves, output_path):
+def plot_precision_recall_with_variance(avg_curves, output_path, model1="BM25", model2="TF-IDF"):
     recall_levels = [i / 10 for i in range(11)]
 
-    bm25_avg, bm25_std = compute_avg_and_std(avg_curves["BM25"])
-    tfidf_avg, tfidf_std = compute_avg_and_std(avg_curves["TF-IDF"])
+    avg1, std1 = compute_avg_and_std(avg_curves[model1])
+    avg2, std2 = compute_avg_and_std(avg_curves[model2])
 
     plt.figure(figsize=(8, 6))
 
-    # BM25
-    plt.plot(recall_levels, bm25_avg, marker='o', label="BM25", color="blue")
-    plt.fill_between(recall_levels, bm25_avg - bm25_std, bm25_avg + bm25_std,
-                     alpha=0.2, color="blue", label="BM25 ±1 std")
+    plt.plot(recall_levels, avg1, marker='o', label=model1, color="blue")
+    plt.fill_between(recall_levels, avg1 - std1, avg1 + std1, alpha=0.2, color="blue", label=f"{model1} ±1 std")
 
-    # TF-IDF
-    plt.plot(recall_levels, tfidf_avg, marker='x', label="TF-IDF", color="green")
-    plt.fill_between(recall_levels, tfidf_avg - tfidf_std, tfidf_avg + tfidf_std,
-                     alpha=0.2, color="green", label="TF-IDF ±1 std")
+    plt.plot(recall_levels, avg2, marker='x', label=model2, color="green")
+    plt.fill_between(recall_levels, avg2 - std2, avg2 + std2, alpha=0.2, color="green", label=f"{model2} ±1 std")
 
     plt.xlabel("Recall medio")
     plt.ylabel("Precision media")
-    plt.title("Curve Precision-Recall medie con varianza (BM25 vs TF-IDF)")
+    plt.title(f"Curve Precision-Recall medie con varianza ({model1} vs {model2})")
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
@@ -38,34 +34,30 @@ def plot_precision_recall_with_variance(avg_curves, output_path):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     plt.savefig(output_path)
     plt.close()
-
     print(f"✅ Grafico con varianza salvato in: {output_path}")
 
 
-
-def plot_per_query_precision_recall(avg_curves, output_path):
+def plot_per_query_precision_recall(avg_curves, output_path, model1="BM25", model2="TF-IDF"):
     recall_levels = [i / 10 for i in range(11)]
-
-    num_queries = len(avg_curves["BM25"])
+    num_queries = len(avg_curves[model1])
     rows, cols = 5, 3
 
     fig, axes = plt.subplots(rows, cols, figsize=(15, 10), sharex=True, sharey=True)
-    fig.suptitle("Precision-Recall Interpolated per Query (BM25 vs TF-IDF)", fontsize=16)
+    fig.suptitle(f"Precision-Recall Interpolated per Query ({model1} vs {model2})", fontsize=16)
 
     for idx in range(num_queries):
         row = idx // cols
         col = idx % cols
         ax = axes[row, col]
 
-        ax.plot(recall_levels, avg_curves["BM25"][idx], label="BM25", color="blue", marker="o", linewidth=1)
-        ax.plot(recall_levels, avg_curves["TF-IDF"][idx], label="TF-IDF", color="green", marker="x", linewidth=1)
+        ax.plot(recall_levels, avg_curves[model1][idx], label=model1, color="blue", marker="o", linewidth=1)
+        ax.plot(recall_levels, avg_curves[model2][idx], label=model2, color="green", marker="x", linewidth=1)
 
         ax.set_title(f"Query {idx+1}", fontsize=8)
         ax.grid(True)
         ax.set_xlim([0, 1])
         ax.set_ylim([0, 1])
 
-    # Rimuove gli assi vuoti se ci fossero
     for idx in range(num_queries, rows * cols):
         fig.delaxes(axes[idx // cols, idx % cols])
 
@@ -76,26 +68,25 @@ def plot_per_query_precision_recall(avg_curves, output_path):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     plt.savefig(output_path)
     plt.close()
-
     print(f"✅ Subplot per-query salvato in: {output_path}")
 
 
 
 # PLotting della media delle precisione per query
-def plot_querywise_precision_bar_chart(precision_dict, output_path):
+def plot_querywise_precision_bar_chart(precision_dict, output_path, model1="BM25", model2="TF-IDF"):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-    num_queries = len(precision_dict["BM25"])
+    num_queries = len(precision_dict[model1])
     query_indices = np.arange(1, num_queries + 1)
 
     width = 0.35  # larghezza delle barre
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    bm25_precisions = precision_dict["BM25"]
-    tfidf_precisions = precision_dict["TF-IDF"]
+    bm25_precisions = precision_dict[model1]
+    tfidf_precisions = precision_dict[model2]
 
-    ax.bar(query_indices - width/2, bm25_precisions, width, label='BM25', color='skyblue')
-    ax.bar(query_indices + width/2, tfidf_precisions, width, label='TF-IDF', color='lightgreen')
+    ax.bar(query_indices - width/2, bm25_precisions, width, label=model1, color='skyblue')
+    ax.bar(query_indices + width/2, tfidf_precisions, width, label=model2, color='lightgreen')
 
     ax.set_xlabel('Query ID')
     ax.set_ylabel('Precisione')
@@ -113,20 +104,20 @@ def plot_querywise_precision_bar_chart(precision_dict, output_path):
 
 
 # Analogo ma per le recall
-def plot_querywise_recall_bar_chart(recall_dict, output_path):
+def plot_querywise_recall_bar_chart(recall_dict, output_path, model1="BM25", model2="TF-IDF"):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-    num_queries = len(recall_dict["BM25"])
+    num_queries = len(recall_dict[model1])
     query_indices = np.arange(1, num_queries + 1)
 
     width = 0.35  # larghezza delle barre
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    bm25_recalls = recall_dict["BM25"]
-    tfidf_recalls = recall_dict["TF-IDF"]
+    bm25_recalls = recall_dict[model1]
+    tfidf_recalls = recall_dict[model2]
 
-    ax.bar(query_indices - width/2, bm25_recalls, width, label='BM25', color='coral')
-    ax.bar(query_indices + width/2, tfidf_recalls, width, label='TF-IDF', color='gold')
+    ax.bar(query_indices - width/2, bm25_recalls, width, label=model1, color='coral')
+    ax.bar(query_indices + width/2, tfidf_recalls, width, label=model2, color='gold')
 
     ax.set_xlabel('Query ID')
     ax.set_ylabel('Recall')
@@ -145,20 +136,20 @@ def plot_querywise_recall_bar_chart(recall_dict, output_path):
 
 
 # Funzione per plottare la NDCG (in modo analogo alla recall e precision)
-def plot_querywise_ndcg_bar_chart(ndcg_dict, output_path):
+def plot_querywise_ndcg_bar_chart(ndcg_dict, output_path, model1="BM25", model2="TF-IDF"):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-    num_queries = len(ndcg_dict["BM25"])
+    num_queries = len(ndcg_dict[model1])
     query_indices = np.arange(1, num_queries + 1)
 
     width = 0.35  # larghezza delle barre
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    bm25_ndcg = ndcg_dict["BM25"]
-    tfidf_ndcg = ndcg_dict["TF-IDF"]
+    bm25_ndcg = ndcg_dict[model1]
+    tfidf_ndcg = ndcg_dict[model2]
 
-    ax.bar(query_indices - width/2, bm25_ndcg, width, label='BM25', color='mediumslateblue')
-    ax.bar(query_indices + width/2, tfidf_ndcg, width, label='TF-IDF', color='mediumseagreen')
+    ax.bar(query_indices - width/2, bm25_ndcg, width, label=model1, color='mediumslateblue')
+    ax.bar(query_indices + width/2, tfidf_ndcg, width, label=model2, color='mediumseagreen')
 
     ax.set_xlabel('Query ID')
     ax.set_ylabel('NDCG')
@@ -175,13 +166,13 @@ def plot_querywise_ndcg_bar_chart(ndcg_dict, output_path):
 
 
 # Plot della R@ precision con grafico a barra singola!
-def plot_querywise_rprecision_bar_chart(r_precision_dict, output_path):
+def plot_querywise_rprecision_bar_chart(r_precision_dict, output_path, model1="BM25", model2="TF-IDF"):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    n = len(r_precision_dict["BM25"])
+    n = len(r_precision_dict[model1])
     x = np.arange(1, n + 1)
 
-    bm25_values = np.array(r_precision_dict["BM25"])
-    tfidf_values = np.array(r_precision_dict["TF-IDF"])
+    bm25_values = np.array(r_precision_dict[model1])
+    tfidf_values = np.array(r_precision_dict[model2])
     
     # Differenza (positiva = BM25 meglio, negativa = TF-IDF meglio)
     diff = bm25_values - tfidf_values
@@ -195,7 +186,7 @@ def plot_querywise_rprecision_bar_chart(r_precision_dict, output_path):
     plt.xticks(x)
     plt.xlabel("Query ID")
     plt.ylabel("Δ R@3 (BM25 - TF-IDF)")
-    plt.title("Differenza di R@3 per Query (verde=BM25 vince, rosso=TF-IDF vince)")
+    plt.title(f"Differenza di R@3 per Query (verde={model1} vince, rosso={model2} vince)")
     plt.tight_layout()
     plt.savefig(output_path)
     plt.close()
@@ -205,38 +196,38 @@ def plot_querywise_rprecision_bar_chart(r_precision_dict, output_path):
 
 
 # Plotting delle Medie e deviazioni Aggregate, passiamo tutti i dizionari completi
-def plot_final_metric_summary_barplot(precision_dict, recall_dict, f1_dict, ndcg_dict, save_path):
+def plot_final_metric_summary_barplot(precision_dict, recall_dict, f1_dict, ndcg_dict, save_path, model1="BM25", model2="TF-IDF"):
     metrics = ['Precision', 'Recall', 'F1', 'NDCG']
-    models = ['BM25', 'TF-IDF']
+    models = [model1, model2]
     
     # Calcolo medie e deviazioni standard per ciascun modello e metrica
     averages = {
-        "BM25": [
-            np.mean(precision_dict["BM25"]),
-            np.mean(recall_dict["BM25"]),
-            np.mean(f1_dict["BM25"]),
-            np.mean(ndcg_dict["BM25"]),
+        model1: [
+            np.mean(precision_dict[model1]),
+            np.mean(recall_dict[model1]),
+            np.mean(f1_dict[model1]),
+            np.mean(ndcg_dict[model1]),
         ],
-        "TF-IDF": [
-            np.mean(precision_dict["TF-IDF"]),
-            np.mean(recall_dict["TF-IDF"]),
-            np.mean(f1_dict["TF-IDF"]),
-            np.mean(ndcg_dict["TF-IDF"]),
+        model2: [
+            np.mean(precision_dict[model2]),
+            np.mean(recall_dict[model2]),
+            np.mean(f1_dict[model2]),
+            np.mean(ndcg_dict[model2]),
         ]
     }
 
     std_devs = {
-        "BM25": [
-            np.std(precision_dict["BM25"]),
-            np.std(recall_dict["BM25"]),
-            np.std(f1_dict["BM25"]),
-            np.std(ndcg_dict["BM25"]),
+        model1: [
+            np.std(precision_dict[model1]),
+            np.std(recall_dict[model1]),
+            np.std(f1_dict[model1]),
+            np.std(ndcg_dict[model1]),
         ],
-        "TF-IDF": [
-            np.std(precision_dict["TF-IDF"]),
-            np.std(recall_dict["TF-IDF"]),
-            np.std(f1_dict["TF-IDF"]),
-            np.std(ndcg_dict["TF-IDF"]),
+        model2: [
+            np.std(precision_dict[model2]),
+            np.std(recall_dict[model2]),
+            np.std(f1_dict[model2]),
+            np.std(ndcg_dict[model2]),
         ]
     }
 
@@ -245,20 +236,20 @@ def plot_final_metric_summary_barplot(precision_dict, recall_dict, f1_dict, ndcg
     width = 0.35
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    rects1 = ax.bar(x - width/2, averages["BM25"], width, label='BM25', yerr=std_devs["BM25"], capsize=5)
-    rects2 = ax.bar(x + width/2, averages["TF-IDF"], width, label='TF-IDF', yerr=std_devs["TF-IDF"], capsize=5)
+    ax.bar(x - width/2, averages[model1], width, label=model1, yerr=std_devs[model1], capsize=5)
+    ax.bar(x + width/2, averages[model2], width, label=model2, yerr=std_devs[model2], capsize=5)
 
     # Etichette e stile
     ax.set_ylabel('Score')
-    ax.set_title('Average Metric Summary with Std Deviation')
+    ax.set_title(f'Average Metric Summary with Std Deviation ({model1} vs {model2})')
     ax.set_xticks(x)
     ax.set_xticklabels(metrics)
     ax.legend()
     ax.grid(True, linestyle='--', alpha=0.5)
 
     fig.tight_layout()
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
     plt.savefig(save_path)
     plt.close()
-    print(f"✅Grafico Medie Aggregate + errore std salvato in: {save_path}")
-
+    print(f"✅ Grafico Medie Aggregate + errore std salvato in: {save_path}")
 
