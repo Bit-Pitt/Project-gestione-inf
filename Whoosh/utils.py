@@ -14,11 +14,19 @@ es = Elasticsearch("http://172.26.112.1:9200")  # Connessione al servizio
 
 # group=OrGroup fa si che internamente il parser tratta ogni parola in OR
 # And(clauses) ==> ogni singola query viene trattata come and
-def build_and_query(ix, queries):
+from make_II import lemmatize_text
+def build_and_query(ix, queries, mode="STD"):
     clauses = []
+
     for field, text in queries.items():
+        # Preprocessing coerente con l'indice
+        if  mode == "LEMM":
+            text = lemmatize_text(text)  
+        # else: Se stemmed lo effettuerà da solo (lo capisce dallo schema)
+
         parser = QueryParser(field, schema=ix.schema, group=OrGroup)
         clauses.append(parser.parse(text))
+
     return And(clauses)
 
 

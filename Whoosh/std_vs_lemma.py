@@ -63,7 +63,7 @@ for entry in query_data:
     r_precision_dict["tf_idf_std"].append(r_prec)
 
     # --- LEMMATIZED ---
-    query_lemm = build_and_query(ix_lemm, queries)
+    query_lemm = build_and_query(ix_lemm, queries,mode="LEMM")
     with ix_lemm.searcher(weighting=whoosh.scoring.TF_IDF()) as searcher_lemm:
         results_lemm = searcher_lemm.search(query_lemm, limit=10)
         retrieved_lemm = [hit['title'] for hit in results_lemm]

@@ -63,7 +63,7 @@ for entry in query_data:
     r_precision_dict["tf_idf_std"].append(r_prec)
 
     # --- STEMMED ---
-    query_stem = build_and_query(ix_stem, queries)
+    query_stem = build_and_query(ix_stem, queries,mode="STEM")
     with ix_stem.searcher(weighting=whoosh.scoring.TF_IDF()) as searcher_stem:
         results_stem = searcher_stem.search(query_stem, limit=10)
         retrieved_stem = [hit['title'] for hit in results_stem]

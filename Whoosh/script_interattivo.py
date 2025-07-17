@@ -35,8 +35,8 @@ indices = {name: open_dir(path) for name, path in index_paths.items()}
 
 # --- Costruzione delle query per ogni indice ---
 query_std = build_and_query(indices["STD"], queries)
-query_lemm = build_and_query(indices["LEMM"], queries)
-query_stem = build_and_query(indices["STEM"], queries)
+query_lemm = build_and_query(indices["LEMM"], queries,mode="LEMM")
+query_stem = build_and_query(indices["STEM"], queries,mode="STEM")
 
 # --- Ricerche da effettuare ---
 retrieved_results = {}
