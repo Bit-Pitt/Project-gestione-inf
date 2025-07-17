@@ -25,7 +25,7 @@ def query_wikidata():
         return None
 
 def get_wikipedia_summary(title, lang='en'):
-    user_agent = "MyWikiScraper/1.0 (als.chiarabini@gmail.com)"  # Cambia con la tua email o un identificativo valido
+    user_agent = "MyWikiScraper/1.0 (als.chiarabini@gmail.com)"
     wiki_wiki = wikipediaapi.Wikipedia(lang, headers={'User-Agent': user_agent})
     
     page = wiki_wiki.page(title)

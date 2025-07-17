@@ -1,4 +1,0 @@
-whoosh
-elasticsearch
-nltk
-spacy
